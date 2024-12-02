@@ -1,0 +1,8 @@
+[build]
+target = "x86_64-unknown-hermit"
+
+[target.'cfg(target_os = "hermit")']
+runner = "./vdpa-runner"
+
+[unstable]
+build-std = ["std", "panic_abort"]
