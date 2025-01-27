@@ -1,0 +1,23 @@
+#! /usr/bin/env bash
+set -x
+HERMIT_PATH="$1"
+HERMIT_ARGS="${*:2:$#}"
+HERMIT_ARCH=$(grep --only-matching --perl-regexp '(?<=/target/)(.*)(?=-unknown-hermit/)' <(echo "$HERMIT_PATH"))
+QUEUE_SIZE=256
+
+sudo /usr/libexec/qemu-kvm \
+    -cpu host,migratable=no,+invtsc \
+    -smp 1 \
+    -m 16G \
+    -mem-prealloc \
+    -object memory-backend-memfd,id=mem,size=16G,share=on \
+    -numa node,memdev=mem \
+    -device isa-debug-exit,iobase=0xf4,iosize=0x04 \
+    -chardev socket,id=charnet1,path=/var/run/openvswitch/vdpa.sock0,server=on \
+    -netdev vhost-user,chardev=charnet1,queues=16,id=hostnet1 \
+    -device virtio-net-pci,mac=52:54:00:12:34:57,disable-legacy=on,disable-modern=off,mq=on,vectors=16,netdev=hostnet1,id=net1,page-per-vq=on,rx_queue_size=$QUEUE_SIZE,tx_queue_size=$QUEUE_SIZE,host_mtu=9978,csum=on,guest_csum=on,host_tso4=on,host_tso6=on,mrg_rxbuf=on \
+    -serial stdio \
+    -hda ~/f40.qcow2 \
+    -display none \
+    -netdev user,id=net0 \
+    -device virtio-net-pci,netdev=net0,disable-legacy=on \
